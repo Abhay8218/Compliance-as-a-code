@@ -43,3 +43,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "customer_data" {
     }
   }
 }
+resource "aws_cloudwatch_log_group" "app_logs" {
+  name              = "caas-app-logs"
+  retention_in_days = 180
+}
