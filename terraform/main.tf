@@ -29,9 +29,37 @@ resource "aws_s3_bucket_versioning" "customer_data" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_kms_key" "customer_data" {
-  description         = "KMS key for customer data bucket"
+  description         = "KMS key for customer data bucket and logs"
   enable_key_rotation = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableAccountAdmin"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchLogs"
+        Effect    = "Allow"
+        Principal = { Service = "logs.ap-south-1.amazonaws.com" }
+        Action = [
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "customer_data" {
@@ -43,7 +71,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "customer_data" {
     }
   }
 }
+
 resource "aws_cloudwatch_log_group" "app_logs" {
   name              = "caas-app-logs"
-  retention_in_days = 180
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.customer_data.arn
 }

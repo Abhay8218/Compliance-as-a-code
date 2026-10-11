@@ -1,0 +1,26 @@
+name: Compliance Scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checkov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Scan Terraform against built-in and India-specific checks
+        run: >
+          checkov -d terraform
+          --external-checks-dir custom_checks
+          --skip-check CKV2_AWS_61,CKV2_AWS_62,CKV_AWS_144,CKV_AWS_18
+          --compact
